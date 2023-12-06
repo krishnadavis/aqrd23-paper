@@ -1,7 +1,6 @@
 library(tidyverse)
 library(scales)
 library(broom)
-library(lme4)
 library(rstanarm)
 library(gt)
 library(haven)
