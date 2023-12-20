@@ -1,0 +1,104 @@
+---
+title: "Looking Beyond Mayors: a Predictive Model for Subway Approval"
+author: "Krishna Davis"
+format:
+  cmc-article-pdf:
+    fontsize: 12pt
+    margin-left: 1.5in
+    margin-right: 1.5in
+    margin-bottom: 1.2in
+    margin-top: 1.2in
+    keep-tex: true
+    fig-pos: 'tbp'
+    tbl-pos: 'tbp'
+    include-in-header: header.tex
+bibliography: bibliography.bib
+abstract: | 
+  China is known for its notable investment in infrastructure projects. Lei and Zhou (2022) have investigated the political implications of infrastructure investment and show that mayors of cities in China who obtain central government approval to build a subway are significantly more likely to earn a political promotion than those who do not. While Lei and Zhou show a relationship between subway approval and mayor promotion, their paper calls for an understanding of the factors that predict subway approval, independent of mayor characteristics. I introduce a new variable as a proxy for city subway suitability (_City Mean Walk Score_) and create predictive models for subway approval absent mayor characteristics. I find that _City Mean Walk Score_ decreases and makes insignificant the coefficient of _Subway Approval_ on _Mayor Promotion_, demonstrating endogeneity not captured in Lei and Zhou's original model. Lastly, I propose a LASSO predictive model for subway approval.
+---
+
+# Introduction[^1]
+
+China is known for its notable investment in infrastructure projects. In fact, @lei2022private find that in 2014 "China made more investment in both railways and roads than all [OECD and other comparable] countries combined" (455-56). Investment in infrastructure, especially transportation infrastructure, has been found by many scholars to have positive social, economic, and environmental effects on cities. @donaldson2018railroads finds that railroad projects in colonial India significantly increased inter-regional economic activity. Additionally, @king2011developing finds that subway construction in New York City played an important role in shaping the urban environment of the city, expanding to areas experiencing commercial growth. Environmentally, a study by @xiao2020effect finds that subway construction reduces air pollution in Chinese cities. There is also evidence that subway construction makes cities more livable. @gu2021subways and @liu2020subways find that subway construction in Chinese cities reduces rush hour road congestion. Importantly, studies by @nadrian2019sick and @mushtaq2022traffic have shown negative impacts of road congestion on mental and physical health, underlining the potential public health value of subway construction. It is clear from the existing literature that subway and other infrastructure projects have important, and largely positive, impacts on urban environments.
+
+[^1]: The replication files for this paper are found here: https://github.com/krishnadavis/aqrd23-paper
+
+Recognizing the Chinese government's significant investment in infrastructure, as well as the specifics nature of the subway approval process in China, @lei2022private investigate the relationship between obtaining subway approval and earning a political promotion. Political promotion in China is by proving one's ability to their political superiors, not by appealing to the general public, since China does not have democratic elections. @lei2022private find significant results that show a  causal effect of subway approval on mayor promotion. However, @lei2022private do not investigate the factors that predict subway approval independent of mayor characteristics. It is possible that some cities are more suitable for subways than others, potentially introducing a confounding factor into Lei & Zhou's original model.
+
+In this paper, I replicate @lei2022private's difference-in-differences model. I also introduce _City Mean Walk Score_ as a proxy for city subway suitability, hypothesizing that cities with higher mean walk scores are more likely to obtain subway approval. Lastly, I specify two predictive models for subway approval using the kitchen sink and LASSO approaches, using variables from @lei2022private's data set, as well as the mean walk score data.
+
+# Data and Methods
+
+As the core data source for this analysis, I use the data set compiled and published by @lei2022private, available through the author's GitHub repository.[^2] This panel data set includes observations for 279 Chinese cities from 2003-2016. The focus of @lei2022private's analysis is mayor promotion, with subway approval as the primary predictor of interest. However, their data set includes several other variables that provide additional context about the cities they study, including economic measures, city population measures, mayor characteristics, environmental data, and others.
+
+[^2]: The replication files for @lei2022private are found here: https://github.com/zjl0714/lei_zhou_jop_2022
+
+In addition, I use data compiled by @ying2018 to incorporate aspects of pedestrian-friendliness and city livability as indicators of city subway suitability, as another potential contextual factor related to subway approval. I utilize a data set published by @li2023public to map city code identifiers in the Lei data set to city names written in Chinese. Then, I use Microsoft Excel's built-in translation feature to translate the Chinese characters into Pinyin, conduct data cleaning to ensure a clean merge, and use the Pinyin city names to fully merge the Lei data set with the Ying data set. @ying2018's data "optimizes the 'Walk Score' algorithm from Walkscore.com, which ranges from 0 to 100, and uses it to calculate the walk score for more than 700,000 streets in 287 main cities in China" (4). Each city has thousands of observations in the Ying data set, each representing a unique street segment. Every observation includes a walk score as well as the dimensions of the street segment. The first walk score measure that I create is the naive mean walk score across all streets in a given city, and the second is a weighted mean walk score, weighted by the dimensions of each street, and averaged across all streets in a given city. Though the weighted measure seemed more interesting to analyze, I use the naive measure as indicated by the statistical tests that follow. One limitation of the Ying data set is that it is only available for 2014. While time-series walk score data would be ideal given the structure of @lei2022private's data set, with repeated measures for each city year-after-year, the one-time walk score measures I calculate from @ying2018 may provide insights regarding city subway suitability. In addition, the walk score data were drawn from a year that is proximate to the time span studied by @lei2022private.
+
+Importantly, @fig-walk shows a clear difference in mean walk score among cities that obtained and did not obtain subway approval, and a t-test confirms the significance of this difference when calculated among eligible cities. This initial exploration demonstrates that walk score is a pertinent variable to study in this context.
+
+![Boxplot of Mean Walk Score by Subway Approval](figures/walkbox.png){#fig-walk width="55%"}
+
+In Table 1, the summary statistics are presented for important variables in this combined data set that reflects the combination of data from @lei2022private and @ying2018. As shown by the lower N for weighted walk score than for the outcome and main predictor variables, there were some cities in the Lei data set that did not have corresponding walk scores. However, the N for city population, a pre-existing variable in the Lei data set, is even lower, so the completeness of data from @ying2018 was judged sufficient to proceed.
+
+I specify five models to replicate and build off of @lei2022private's work. The first four models replicate @lei2022private's difference-in-differences (DID) design to estimate the causal effect of subway approval on mayor promotion using an ordinary least squares regression model. The fifth model extends the original by adding mean walk score as an additional control. The extended model is specified by the following equation: $$Y_{it} = \alpha + \beta_{1}D_{it} + \beta_{2}W_{i} + \gamma X_{it - 1} + \theta_{i} + \pi_{t} + \epsilon_{it},$$ where $Y_{it}$ is a binary variable "indicating whether the mayor of city *i* was promoted within three years from year *t*" [@lei2022private 460]. @lei2022private specify the criteria they use to determine mayor promotion. A mayor is considered promoted if the mayor has become a "party secretary of a prefecture-level city" or obtained "a vice-province-level position" [@lei2022private 460]. $Y_{it}$ is calculated using a three-year lead to account for the fact that "the average tenure of Chinese mayors is roughly three years" [@lei2022private 460].
+
+```{=tex}
+\begin{table}
+\caption{\textbf{Summary Statistics for Combined Data Set}}
+\label{tab:sum-tex}
+\input{tables/sumtable.tex}
+\end{table}
+```
+
+The main predictor in the model is subway plan approval, represented by $D_{it}$, which is a binary variable indicating if city *i* obtains subway approval in year *t*. @lei2022private describe potential challenges in coding subway approval, especially in cases where one mayor initiated the approval process while another was in office when approval came through. They specify the coding choices they make in their paper and my findings are based on their coding assumptions. 
+
+A novel predictor in this model is mean walk score, represented by $W_{i}$. $W_{i}$ is a continuous index from 0-100, with high values indicating high walkability, and lower values indicating comparatively lower walkability. Lastly, the model includes "city-level, one-year lagged, time-variant control variables" [@lei2022private 460], represented by the vector $X_{it - 1}$, as well as city fixed effects, shown by $\theta_{i}$, and year fixed effects, shown by $\pi_{t}$. Following @lei2022private, standard errors are clustered "at the city level to deal with city-level serial correlation" [@lei2022private 460]. The coefficient of interest is $\beta_{1}$ which represents the causal effect of subway approval on mayor promotion.
+
+@lei2022private's DID design is only valid if it satisfies the parallel trends assumption [@marx2022parallel]. In this context, the parallel trends assumption requires that mayor promotion is not affected by future subway approval. @lei2022private demonstrate that their DID model satisfies the parallel trends assumption, as illustrated by an event study plot, showing that the effect of future subway approval on current mayor promotion is around zero and insignificant, while a positive and significant effect on promotion is evident after approval. Using the combined data set for this study, I find that the parallel trends assumption is met and replicate @lei2022private's plot in @fig-event.
+
+![Event Study Plot for Effect of Subway Approval on Mayor Promotion](figures/eventstudy.png){#fig-event}
+
+In addition to introducing the walk score variable to @lei2022private's DID design, I employ two prediction techniques to specify models for subway approval, inspired by the first stage of @lei2022private's fuzzy regression discontinuity design. To specify this model, I filter the data set to only include city-year observations that meet the criteria for subway eligibility. 120 unique cities remain in this dataset. To be eligible for subway approval, a Chinese city must have an annual fiscal revenue greater than ¥10 billion, a GDP greater than or equal to ¥100 billion, and a population of over 3 million people [@lei2022private 462-63]. Although @lei2022private show that GDP and annual fiscal revenue data is often manipulated by city officials, sorting the data by these variables is still a sound strategy to eliminate cities that are not at all close to meeting the eligibility criteria.
+
+I employ logit regression, since subway approval is a binary outcome, and incorporate the variables in the combined data set to specify two predictive models. In the first model, I start with a "kitchen sink" using all predictors absent those related to mayor characteristics. I also eliminate the average nighttime light intensity and air quality index variables due to egregious missingness. The second model employs a least absolute shrinkage and selection operator (LASSO) regression to reduce model complexity.
+
+The kitchen sink regression is specified by the following equation: $$A_{it} = \alpha +  \sum_{j=1}^{25} \beta_{j}X_{itj} + \epsilon_{it},$$ where $A_{it}$ represents subway approval for city *i* in year *t*, and each $X_{it}$ represents each predictor in the model. The 25 predictors in the model are city population, one- and two-year lagged city population, city GDP, one- and two-year lagged city GDP, annual fiscal revenue, one- and two-year lagged annual fiscal revenue, annual fiscal revenue per capita, GDP growth, one-year lagged GDP growth, total area of land sales, area of land purchased, land sales revenue per capita, infrastructure investment per capita, one-year lagged infrastructure investment per capita, unemployment rate, land price per hectare, land area per property transaction, land value per property transaction, naive mean walk score, and weighted mean walk score. Despite potential issues of multicollinearity caused by including predictors that are potentially highly correlated with each other, I decide to keep all predictors in the kitchen sink, since I also specify a LASSO regression to reduce the complexity of the model.
+
+The LASSO regression is specified by the following equation: $$A_{it} = \alpha +  \sum_{j=1}^{11} \beta_{j}X_{itj} + \epsilon_{it},$$ where $A_{it}$ represents subway approval for city *i* in year *t*, and each $X_{it}$ represents each predictor remaining in the LASSO model when specified to minimize its $\lambda$ penalty term. 
+
+I use receiver operating characteristic (ROC) curves of each logit model to compare their predictive accuracy. The ROC curve shows the false positive and true positive classification rates of each model at different classification thresholds. Often, the area under each curve (AUC) is used as a measure of the model's predictive accuracy when classifying events. In this case, the event each model is classifying is whether or not a city obtained subway approval. An AUC of 1 indicates that a model is a perfect classifier, while an AUC of 0 indicates that a model perfectly incorrectly classifies events. An AUC of 0.5 indicates that a model's classification ability is practically random, showing that the model is ineffective [@hajian2013receiver].
+
+# Results
+
+Table 2 shows the results of the DID regression of data predicting mayor promotion. Model specifications 1-4 replicate @lei2022private's design and findings, in which additional variables were progressively added as indicated by the table. Just as in the original paper, the statistically significant estimates (p < 0.01 for specifications 1-3, and p < 0.05 for specification 4) of the effect of subway approval on mayor promotion range from 0.251 to 0.213. These estimates demonstrate that subway approval increases chances of mayor promotion within three years by about 21.3 to 25.1 percentage points, providing evidence for the hypothesis that mayors who obtain subway approval are more likely to be promoted by their superiors.
+
+In the fifth model specification, which includes mean walk score as a predictor as well as all other controls except for city fixed effects, I find  evidence of some endogeneity not captured by the original DID design by @lei2022private. In this model, subway approval is not statistically significantly associated with mayor promotion, suggesting that the mean walk score may capture some endogeneity present in the original specifications and demonstrating that there may be other factors that affect mayor promotion that are absent from the model.
+
+```{=tex}
+\begin{table}
+\captionsetup{labelformat=empty}
+\caption{\textbf{Table 2: Subway Approval and Mayor Promotion}}
+\label{tab:reg-tex}
+\input{tables/regtable.tex}
+\end{table}
+```
+
+![ROC Curve for Logit Models Predicting Subway Approval](figures/rocplot.png){#fig-roc width="90%"}
+
+Next, I compare two predictive models: kitchen sink and LASSO. The 11 predictors that remain in the final LASSO model are city population, two-year lagged annual fiscal revenue, annual fiscal revenue per capita, unemployment rate, one-year lagged GDP growth, one-year lagged GDP per capita, infrastructure investment per capita, one-year lagged infrastructure investment per capita, land sales revenue per capita, land price per hectare, and naive mean walk score.
+
+Based on analysis of the ROC curves of each logit model, shown in @fig-roc, the kitchen sink model has an AUC value of 0.779 and the LASSO model has an AUC of 0.844. Therefore, the LASSO model provides the best predictive accuracy of the two and significantly reduces the model complexity from 25 predictors to 11.
+
+# Conclusion
+
+Building subways in urban areas has been shown to have profound impacts on many aspects of urban life. In China specifically, building a subway in a city has been shown to reduce air pollution [@xiao2020effect] and decrease road congestion [@gu2021subways; @liu2020subways]. In addition, @lei2022private find that obtaining subway approval in Chinese cities significantly increases a mayor's chances of being promoted. The existing literature, as well as @lei2022private's study, calls for a more complete understanding of the factors that impact subway approval in Chinese cities. 
+
+In this paper, I replicated @lei2022private's findings, showing that subway approval has a significant causal effect on mayor promotion within three years through a DID model. Notably, the inclusion of data in the extended model to reflect the walkability of cities indicated endogeneity in the original model reported by @lei2022private, suggesting that there are other factors absent from their model that may affect mayor promotion. My examination of two different predictive models for subway approval indicates that a LASSO approach provides better predictive accuracy and a simpler model than the kitchen sink.
+
+The contribution of this analysis is that it extends the insightful work of Lei & Zhou by incorporating a different measure of Chinese city characteristics, which may be pertinent in determining the likelihood of subway construction. However, there are some limitations of the combined data set that are important to note. First, walkability data from @ying2018 is only available for one year, which does not capture the year-to-year dynamics of city characteristics as Lei & Zhou do in their original data set. Even though the walkability data was collected during the time frame covered by Lei & Zhou's data, there may be some bias introduced by the time constraint. Future research could collect and incorporate year-to-year walk score data into the analysis. Second, walk score data is not available for all cities in the Lei & Zhou data set. It is possible that missing data in the full DID model and the three predictive specifications somehow bias the results, but more information about the bias cannot be determined from the data that is available.
+
+The political promotion of mayors in Chinese cities is related to approval to build subways in those cities, as shown by @lei2022private. Additional consideration of city walkability in this relationship suggests that there is endogeneity in the relationship between mayor promotion and subway approval in ways that have not previously been shown. Future research may seek to improve the completeness of the walk score data and further investigate and evaluate predictive models for subway approval.
+
+::: {#refs}
+:::
